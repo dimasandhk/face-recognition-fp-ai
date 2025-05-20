@@ -1,0 +1,5 @@
+tensorflow
+deepface
+pillow-heif
+tf-keras
+flask

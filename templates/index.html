@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Face Recognition App</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto p-5">
+      <h1 class="text-3xl font-bold text-center mb-8 text-blue-700">
+        Face Recognition App
+      </h1>
+      <div class="w-full max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
+        <div class="mb-6 border-b border-gray-200">
+          <nav class="flex space-x-4" aria-label="Tabs">
+            <button
+              id="tab-upload"
+              class="py-2 px-4 text-blue-600 border-b-2 border-blue-600 font-semibold focus:outline-none"
+              onclick="showTab('uploadTab')"
+            >
+              Upload Images
+            </button>
+            <button
+              id="tab-webcam"
+              class="py-2 px-4 text-gray-600 hover:text-blue-600 border-b-2 border-transparent font-semibold focus:outline-none"
+              onclick="showTab('webcamTab')"
+            >
+              Webcam Recognition
+            </button>
+          </nav>
+        </div>
+
+        <!-- Tab 1: Upload Images -->
+        <div id="uploadTab" class="tab-content">
+          <h2 class="text-xl font-semibold mb-4 text-gray-700">
+            Upload Two Images for Similarity Prediction
+          </h2>
+          <form id="imageUploadForm" enctype="multipart/form-data">
+            <div class="mb-4 flex gap-4">
+              <div class="flex-1">
+                <label class="block text-gray-700 mb-1">Image 1:</label>
+                <input
+                  type="file"
+                  name="image1"
+                  id="image1"
+                  accept="image/*"
+                  class="block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                  required
+                />
+                <img
+                  id="preview1"
+                  class="mt-2 rounded shadow max-h-40 mx-auto hidden"
+                />
+              </div>
+              <div class="flex-1">
+                <label class="block text-gray-700 mb-1">Image 2:</label>
+                <input
+                  type="file"
+                  name="image2"
+                  id="image2"
+                  accept="image/*"
+                  class="block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                  required
+                />
+                <img
+                  id="preview2"
+                  class="mt-2 rounded shadow max-h-40 mx-auto hidden"
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded w-full font-semibold"
+            >
+              Predict Similarity
+            </button>
+          </form>
+          <!-- Loading spinner -->
+          <div id="loading" class="flex justify-center mt-4 hidden">
+            <svg
+              class="animate-spin h-8 w-8 text-blue-600"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v8z"
+              ></path>
+            </svg>
+          </div>
+          <div id="result" class="mt-5 text-center text-gray-800"></div>
+        </div>
+
+        <!-- Tab 2: Webcam Recognition -->
+        <div id="webcamTab" class="tab-content hidden">
+          <h2 class="text-xl font-semibold mb-4 text-gray-700">
+            Webcam Face Recognition
+          </h2>
+          <form id="webcamForm" enctype="multipart/form-data">
+            <div class="mb-4">
+              <label class="block text-gray-700 mb-1">Reference Image:</label>
+              <input
+                type="file"
+                name="reference"
+                accept="image/*"
+                class="block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                required
+              />
+            </div>
+            <div class="mb-4 flex flex-col items-center">
+              <video
+                id="webcam"
+                class="border border-gray-300 rounded-md mb-2"
+                width="320"
+                height="240"
+                autoplay
+              ></video>
+              <canvas
+                id="webcamCanvas"
+                width="320"
+                height="240"
+                class="hidden"
+              ></canvas>
+              <button
+                type="button"
+                id="captureBtn"
+                class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded font-semibold mt-2"
+              >
+                Capture & Predict
+              </button>
+            </div>
+          </form>
+          <div id="webcamResult" class="mt-5 text-center text-gray-800"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Tab switching logic
+      function showTab(tabId) {
+        document.getElementById("uploadTab").classList.add("hidden");
+        document.getElementById("webcamTab").classList.add("hidden");
+        document.getElementById(tabId).classList.remove("hidden");
+        // Update tab button styles
+        document
+          .getElementById("tab-upload")
+          .classList.toggle("text-blue-600", tabId === "uploadTab");
+        document
+          .getElementById("tab-upload")
+          .classList.toggle("border-blue-600", tabId === "uploadTab");
+        document
+          .getElementById("tab-upload")
+          .classList.toggle("text-gray-600", tabId !== "uploadTab");
+        document
+          .getElementById("tab-upload")
+          .classList.toggle("border-transparent", tabId !== "uploadTab");
+        document
+          .getElementById("tab-webcam")
+          .classList.toggle("text-blue-600", tabId === "webcamTab");
+        document
+          .getElementById("tab-webcam")
+          .classList.toggle("border-blue-600", tabId === "webcamTab");
+        document
+          .getElementById("tab-webcam")
+          .classList.toggle("text-gray-600", tabId !== "webcamTab");
+        document
+          .getElementById("tab-webcam")
+          .classList.toggle("border-transparent", tabId !== "webcamTab");
+      }
+
+      // Default tab
+      showTab("uploadTab");
+
+      // Image preview logic
+      function previewImage(input, previewId) {
+        const file = input.files[0];
+        const preview = document.getElementById(previewId);
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            preview.src = e.target.result;
+            preview.classList.remove("hidden");
+          };
+          reader.readAsDataURL(file);
+        } else {
+          preview.src = "";
+          preview.classList.add("hidden");
+        }
+      }
+      document.getElementById("image1").addEventListener("change", function () {
+        previewImage(this, "preview1");
+      });
+      document.getElementById("image2").addEventListener("change", function () {
+        previewImage(this, "preview2");
+      });
+
+      // Upload Images Form
+      document
+        .getElementById("imageUploadForm")
+        .addEventListener("submit", async function (event) {
+          event.preventDefault();
+          document.getElementById("loading").classList.remove("hidden");
+          document.getElementById("result").innerText = "";
+          let verdict = document.getElementById("verdict");
+          if (verdict) verdict.textContent = "";
+
+          const formData = new FormData(this);
+          const response = await fetch("/predict", {
+            method: "POST",
+            body: formData
+          });
+          const data = await response.json();
+          document.getElementById("loading").classList.add("hidden");
+          document.getElementById("result").innerText = JSON.stringify(
+            data,
+            null,
+            2
+          );
+
+          // Show verdict text under the button
+          verdict = document.getElementById("verdict");
+          if (!verdict) {
+            verdict = document.createElement("div");
+            verdict.id = "verdict";
+            verdict.className = "mt-2 text-lg font-semibold text-center";
+            document.getElementById("imageUploadForm").after(verdict);
+          }
+          if (data.verified === true) {
+            verdict.textContent = "✅ Both images are of the same person.";
+            verdict.classList.remove("text-red-600");
+            verdict.classList.add("text-green-600");
+          } else if (data.verified === false) {
+            verdict.textContent = "❌ The images are NOT of the same person.";
+            verdict.classList.remove("text-green-600");
+            verdict.classList.add("text-red-600");
+          } else {
+            verdict.textContent = "";
+          }
+        });
+
+      // Webcam logic
+      const video = document.getElementById("webcam");
+      const canvas = document.getElementById("webcamCanvas");
+      const captureBtn = document.getElementById("captureBtn");
+      let stream = null;
+
+      // Start webcam when webcam tab is shown
+      document
+        .getElementById("tab-webcam")
+        .addEventListener("click", async () => {
+          if (!stream) {
+            try {
+              stream = await navigator.mediaDevices.getUserMedia({
+                video: true
+              });
+              video.srcObject = stream;
+            } catch (err) {
+              alert("Could not access webcam.");
+            }
+          }
+        });
+
+      // Capture and send to backend
+      captureBtn.addEventListener("click", async function () {
+        // Draw video frame to canvas
+        canvas
+          .getContext("2d")
+          .drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(async function (blob) {
+          const refInput = document.querySelector(
+            '#webcamTab input[type="file"]'
+          );
+          if (!refInput.files[0]) {
+            alert("Please upload a reference image first.");
+            return;
+          }
+          // Show loading spinner
+          let webcamResult = document.getElementById("webcamResult");
+          webcamResult.innerText = "";
+          if (!document.getElementById("webcamLoading")) {
+            const spinner = document.createElement("div");
+            spinner.id = "webcamLoading";
+            spinner.className = "flex justify-center mt-4";
+            spinner.innerHTML = `<svg class="animate-spin h-8 w-8 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+            </svg>`;
+            webcamResult.before(spinner);
+          }
+          const formData = new FormData();
+          formData.append("reference", refInput.files[0]);
+          formData.append("webcam", blob, "webcam.jpg");
+          const response = await fetch("/predict_webcam", {
+            method: "POST",
+            body: formData
+          });
+          const data = await response.json();
+          // Remove loading spinner
+          const spinner = document.getElementById("webcamLoading");
+          if (spinner) spinner.remove();
+          webcamResult.innerText = JSON.stringify(data, null, 2);
+          // Show verdict
+          let webcamVerdict = document.getElementById("webcamVerdict");
+          if (!webcamVerdict) {
+            webcamVerdict = document.createElement("div");
+            webcamVerdict.id = "webcamVerdict";
+            webcamVerdict.className = "mt-2 text-lg font-semibold text-center";
+            webcamResult.after(webcamVerdict);
+          }
+          if (data.verified === true) {
+            webcamVerdict.textContent =
+              "✅ Webcam and reference are the same person.";
+            webcamVerdict.classList.remove("text-red-600");
+            webcamVerdict.classList.add("text-green-600");
+          } else if (data.verified === false) {
+            webcamVerdict.textContent =
+              "❌ Webcam and reference are NOT the same person.";
+            webcamVerdict.classList.remove("text-green-600");
+            webcamVerdict.classList.add("text-red-600");
+          } else {
+            webcamVerdict.textContent = "";
+          }
+        }, "image/jpeg");
+      });
+
+      // Webcam reference image preview
+      document
+        .querySelector('#webcamTab input[type="file"]')
+        .addEventListener("change", function () {
+          let preview = document.getElementById("webcamRefPreview");
+          if (!preview) {
+            preview = document.createElement("img");
+            preview.id = "webcamRefPreview";
+            preview.className = "mt-2 rounded shadow max-h-40 mx-auto";
+            this.after(preview);
+          }
+          const file = this.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+              preview.src = e.target.result;
+              preview.classList.remove("hidden");
+            };
+            reader.readAsDataURL(file);
+          } else {
+            preview.src = "";
+            preview.classList.add("hidden");
+          }
+        });
+    </script>
+  </body>
+</html>
