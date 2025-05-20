@@ -49,3 +49,10 @@ face-recogntion-fp-ai
 3. Tab pertama untuk fitur prediksi wajah dengan mengupload 2 gambar.
 
 4. Tab kedua untuk fitur prediksi wajah dengan 1 referensi gambar dan 1 webcam.
+
+### First tab
+
+<img src="./docs/preview1.png" />
+<img src="./docs/preview2.png" />
+
+### Second Tab
