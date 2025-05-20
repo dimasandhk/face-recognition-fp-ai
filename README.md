@@ -52,7 +52,14 @@ face-recogntion-fp-ai
 
 ### First tab
 
-<img src="./docs/preview1.png" />
-<img src="./docs/preview2.png" />
+<div style="display: flex; gap: 10px;">
+  <img src="./docs/preview1.png" width="48%" />
+  <img src="./docs/preview2.png" width="48%" />
+</div>
 
 ### Second Tab
+
+<div style="display: flex; gap: 10px;">
+  <img src="./docs/preview3.png" width="48%" />
+  <img src="./docs/preview4.png" width="48%" />
+</div>
