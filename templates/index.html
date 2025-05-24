@@ -6,6 +6,42 @@
     <title>074 & 0xx Face Recognition FP AI</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Custom styles for result display */
+      .result-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.25rem 0;
+        border-bottom: 1px solid #e5e7eb; /* gray-200 */
+      }
+      .result-item:last-child {
+        border-bottom: none;
+      }
+      .result-label {
+        font-weight: 600;
+        color: #4b5563; /* gray-600 */
+      }
+      .result-value {
+        color: #1f2937; /* gray-800 */
+      }
+      .similarity-bar-container {
+        width: 100%;
+        background-color: #e5e7eb; /* gray-200 */
+        border-radius: 0.25rem;
+        overflow: hidden;
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+      .similarity-bar {
+        height: 1.25rem; /* h-5 */
+        background-color: #3b82f6; /* blue-500 */
+        text-align: center;
+        line-height: 1.25rem; /* leading-5 */
+        color: white;
+        font-weight: bold;
+        transition: width 0.5s ease-in-out;
+      }
+    </style>
   </head>
   <body class="bg-gray-100 min-h-screen">
     <div class="container mx-auto p-5">
@@ -38,6 +74,26 @@
             Upload Two Images for Similarity Prediction
           </h2>
           <form id="imageUploadForm" enctype="multipart/form-data">
+            <div class="mb-4">
+              <label for="modelSelectUpload" class="block text-gray-700 mb-1"
+                >Select Model:</label
+              >
+              <select
+                id="modelSelectUpload"
+                name="model_name"
+                class="block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white"
+              >
+                <option value="VGG-Face" selected>VGG-Face</option>
+                <option value="Facenet512">Facenet512</option>
+                <option value="ArcFace">ArcFace</option>
+                <option value="SFace">SFace</option>
+                <option value="Facenet">Facenet</option>
+                <option value="OpenFace">OpenFace</option>
+                <option value="DeepFace">DeepFace</option>
+                <option value="DeepID">DeepID</option>
+                <option value="GhostFaceNet">GhostFaceNet</option>
+              </select>
+            </div>
             <div class="mb-4 flex gap-4">
               <div class="flex-1">
                 <label class="block text-gray-700 mb-1">Image 1:</label>
@@ -45,7 +101,7 @@
                   type="file"
                   name="image1"
                   id="image1"
-                  accept="image/*"
+                  accept="image/*,.heic,.heif"
                   class="block w-full border border-gray-300 rounded-md shadow-sm p-2"
                   required
                 />
@@ -60,7 +116,7 @@
                   type="file"
                   name="image2"
                   id="image2"
-                  accept="image/*"
+                  accept="image/*,.heic,.heif"
                   class="block w-full border border-gray-300 rounded-md shadow-sm p-2"
                   required
                 />
@@ -77,8 +133,7 @@
               Predict Similarity
             </button>
           </form>
-          <!-- Loading spinner -->
-          <div id="loading" class="flex justify-center mt-4 hidden">
+          <div id="loadingUpload" class="flex justify-center mt-4 hidden">
             <svg
               class="animate-spin h-8 w-8 text-blue-600"
               xmlns="http://www.w3.org/2000/svg"
@@ -96,11 +151,15 @@
               <path
                 class="opacity-75"
                 fill="currentColor"
-                d="M4 12a8 8 0 018-8v8z"
+                d="M4 12a8 8 0 018-8V8z"
               ></path>
             </svg>
           </div>
-          <div id="result" class="mt-5 text-center text-gray-800"></div>
+          <div id="resultUpload" class="mt-5 text-gray-800"></div>
+          <div
+            id="verdictUpload"
+            class="mt-2 text-lg font-semibold text-center"
+          ></div>
         </div>
 
         <!-- Tab 2: Webcam Recognition -->
@@ -110,22 +169,48 @@
           </h2>
           <form id="webcamForm" enctype="multipart/form-data">
             <div class="mb-4">
+              <label for="modelSelectWebcam" class="block text-gray-700 mb-1"
+                >Select Model:</label
+              >
+              <select
+                id="modelSelectWebcam"
+                name="model_name_webcam"
+                class="block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white"
+              >
+                <option value="VGG-Face" selected>VGG-Face</option>
+                <option value="Facenet512">Facenet512</option>
+                <option value="ArcFace">ArcFace</option>
+                <option value="SFace">SFace</option>
+                <option value="Facenet">Facenet</option>
+                <option value="OpenFace">OpenFace</option>
+                <option value="DeepFace">DeepFace</option>
+                <option value="DeepID">DeepID</option>
+                <option value="GhostFaceNet">GhostFaceNet</option>
+              </select>
+            </div>
+            <div class="mb-4">
               <label class="block text-gray-700 mb-1">Reference Image:</label>
               <input
                 type="file"
                 name="reference"
-                accept="image/*"
+                id="referenceImageWebcam"
+                accept="image/*,.heic,.heif"
                 class="block w-full border border-gray-300 rounded-md shadow-sm p-2"
                 required
+              />
+              <img
+                id="webcamRefPreview"
+                class="mt-2 rounded shadow max-h-40 mx-auto hidden"
               />
             </div>
             <div class="mb-4 flex flex-col items-center">
               <video
-                id="webcam"
+                id="webcamVideo"
                 class="border border-gray-300 rounded-md mb-2"
                 width="320"
                 height="240"
                 autoplay
+                playsinline
               ></video>
               <canvas
                 id="webcamCanvas"
@@ -142,7 +227,33 @@
               </button>
             </div>
           </form>
-          <div id="webcamResult" class="mt-5 text-center text-gray-800"></div>
+          <div id="loadingWebcam" class="flex justify-center mt-4 hidden">
+            <svg
+              class="animate-spin h-8 w-8 text-green-600"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V8z"
+              ></path>
+            </svg>
+          </div>
+          <div id="resultWebcam" class="mt-5 text-gray-800"></div>
+          <div
+            id="verdictWebcam"
+            class="mt-2 text-lg font-semibold text-center"
+          ></div>
         </div>
       </div>
     </div>
@@ -153,37 +264,21 @@
         document.getElementById("uploadTab").classList.add("hidden");
         document.getElementById("webcamTab").classList.add("hidden");
         document.getElementById(tabId).classList.remove("hidden");
-        // Update tab button styles
-        document
-          .getElementById("tab-upload")
-          .classList.toggle("text-blue-600", tabId === "uploadTab");
-        document
-          .getElementById("tab-upload")
-          .classList.toggle("border-blue-600", tabId === "uploadTab");
-        document
-          .getElementById("tab-upload")
-          .classList.toggle("text-gray-600", tabId !== "uploadTab");
-        document
-          .getElementById("tab-upload")
-          .classList.toggle("border-transparent", tabId !== "uploadTab");
-        document
-          .getElementById("tab-webcam")
-          .classList.toggle("text-blue-600", tabId === "webcamTab");
-        document
-          .getElementById("tab-webcam")
-          .classList.toggle("border-blue-600", tabId === "webcamTab");
-        document
-          .getElementById("tab-webcam")
-          .classList.toggle("text-gray-600", tabId !== "webcamTab");
-        document
-          .getElementById("tab-webcam")
-          .classList.toggle("border-transparent", tabId !== "webcamTab");
+        const tabs = ["upload", "webcam"];
+        tabs.forEach((tab) => {
+          const button = document.getElementById(`tab-${tab}`);
+          const isCurrentTab = `${tab}Tab` === tabId;
+          button.classList.toggle("text-blue-600", isCurrentTab);
+          button.classList.toggle("border-blue-600", isCurrentTab);
+          button.classList.toggle("text-gray-600", !isCurrentTab);
+          button.classList.toggle("border-transparent", !isCurrentTab);
+        });
+        if (tabId === "webcamTab" && !stream) {
+          startWebcam();
+        }
       }
-
-      // Default tab
       showTab("uploadTab");
 
-      // Image preview logic
       function previewImage(input, previewId) {
         const file = input.files[0];
         const preview = document.getElementById(previewId);
@@ -205,160 +300,205 @@
       document.getElementById("image2").addEventListener("change", function () {
         previewImage(this, "preview2");
       });
+      document
+        .getElementById("referenceImageWebcam")
+        .addEventListener("change", function () {
+          previewImage(this, "webcamRefPreview");
+        });
 
-      // Upload Images Form
+      function displayResults(data, resultElementId, verdictElementId) {
+        const resultElement = document.getElementById(resultElementId);
+        const verdictElement = document.getElementById(verdictElementId);
+        resultElement.innerHTML = "";
+        verdictElement.textContent = "";
+
+        if (data.error) {
+          resultElement.innerHTML = `<p class="text-red-500 text-center font-semibold">${data.error}</p>`;
+          return;
+        }
+
+        const {
+          verified,
+          distance,
+          threshold,
+          model,
+          similarity_metric,
+          similarity_percentage,
+        } = data;
+
+        let html = '<div class="bg-gray-50 p-3 rounded-md shadow-sm">';
+        html += `<div class="result-item"><span class="result-label">Model Used:</span> <span class="result-value">${model}</span></div>`;
+        html += `<div class="result-item"><span class="result-label">Distance:</span> <span class="result-value">${parseFloat(
+          distance
+        ).toFixed(4)}</span></div>`;
+        html += `<div class="result-item"><span class="result-label">Threshold:</span> <span class="result-value">${parseFloat(
+          threshold
+        ).toFixed(4)}</span></div>`;
+        html += `<div class="result-item"><span class="result-label">Similarity Metric:</span> <span class="result-value">${similarity_metric}</span></div>`;
+
+        // Similarity Percentage Bar
+        html += `<div class="mt-3 mb-1"><span class="result-label">Similarity Score:</span></div>`;
+        html += `<div class="similarity-bar-container">`;
+        html += `<div class="similarity-bar" style="width: ${similarity_percentage}%; background-color: ${
+          verified ? "#10B981" : "#EF4444"
+        };">${similarity_percentage}%</div>`; // green-500 or red-500
+        html += `</div>`;
+
+        html += `<div class="result-item mt-1"><span class="result-label">Verified:</span> <span class="result-value font-bold ${
+          verified ? "text-green-600" : "text-red-600"
+        }">${
+          verified ? "Yes (Same Person)" : "No (Different Persons)"
+        }</span></div>`;
+        html += "</div>";
+        resultElement.innerHTML = html;
+
+        if (verified === true) {
+          verdictElement.textContent = `✅ Verified as the same person with ${similarity_percentage}% similarity.`;
+          verdictElement.className =
+            "mt-2 text-lg font-semibold text-center text-green-600";
+        } else if (verified === false) {
+          verdictElement.textContent = `❌ Verified as different persons. Similarity score: ${similarity_percentage}%.`;
+          verdictElement.className =
+            "mt-2 text-lg font-semibold text-center text-red-600";
+        }
+      }
+
       document
         .getElementById("imageUploadForm")
         .addEventListener("submit", async function (event) {
           event.preventDefault();
-          document.getElementById("loading").classList.remove("hidden");
-          document.getElementById("result").innerText = "";
-          let verdict = document.getElementById("verdict");
-          if (verdict) verdict.textContent = "";
-
+          document.getElementById("loadingUpload").classList.remove("hidden");
+          document.getElementById("resultUpload").innerHTML = "";
+          document.getElementById("verdictUpload").textContent = "";
           const formData = new FormData(this);
-          const response = await fetch("/predict", {
-            method: "POST",
-            body: formData
-          });
-          const data = await response.json();
-          document.getElementById("loading").classList.add("hidden");
-          document.getElementById("result").innerText = JSON.stringify(
-            data,
-            null,
-            2
-          );
-
-          // Show verdict text under the button
-          verdict = document.getElementById("verdict");
-          if (!verdict) {
-            verdict = document.createElement("div");
-            verdict.id = "verdict";
-            verdict.className = "mt-2 text-lg font-semibold text-center";
-            document.getElementById("imageUploadForm").after(verdict);
-          }
-          if (data.verified === true) {
-            verdict.textContent = "✅ Both images are of the same person.";
-            verdict.classList.remove("text-red-600");
-            verdict.classList.add("text-green-600");
-          } else if (data.verified === false) {
-            verdict.textContent = "❌ The images are NOT of the same person.";
-            verdict.classList.remove("text-green-600");
-            verdict.classList.add("text-red-600");
-          } else {
-            verdict.textContent = "";
+          try {
+            const response = await fetch("/predict", {
+              method: "POST",
+              body: formData,
+            });
+            const data = await response.json();
+            displayResults(data, "resultUpload", "verdictUpload");
+          } catch (error) {
+            console.error("Error during upload prediction:", error);
+            document.getElementById(
+              "resultUpload"
+            ).innerHTML = `<p class="text-red-500 text-center font-semibold">An unexpected error occurred. Check console.</p>`;
+          } finally {
+            document.getElementById("loadingUpload").classList.add("hidden");
           }
         });
 
-      // Webcam logic
-      const video = document.getElementById("webcam");
+      const video = document.getElementById("webcamVideo");
       const canvas = document.getElementById("webcamCanvas");
       const captureBtn = document.getElementById("captureBtn");
       let stream = null;
 
-      // Start webcam when webcam tab is shown
-      document
-        .getElementById("tab-webcam")
-        .addEventListener("click", async () => {
-          if (!stream) {
-            try {
-              stream = await navigator.mediaDevices.getUserMedia({
-                video: true
-              });
-              video.srcObject = stream;
-            } catch (err) {
-              alert("Could not access webcam.");
-            }
-          }
-        });
+      async function startWebcam() {
+        if (stream) return;
+        try {
+          // Coba dapatkan akses webcam dengan konfigurasi yang lebih fleksibel
+          const constraints = {
+            video: {
+              width: { ideal: 320 },
+              height: { ideal: 240 },
+              facingMode: "user",
+            },
+          };
 
-      // Capture and send to backend
+          stream = await navigator.mediaDevices.getUserMedia(constraints);
+          video.srcObject = stream;
+
+          // Tambahkan event listener untuk menangani error video
+          video.onerror = function (e) {
+            console.error("Video error:", e);
+            alert(
+              "Terjadi kesalahan pada video. Silakan refresh halaman dan coba lagi."
+            );
+          };
+
+          // Pastikan video sudah siap
+          video.onloadedmetadata = function () {
+            video.play();
+          };
+        } catch (err) {
+          console.error("Webcam error:", err);
+          let errorMessage = "Tidak dapat mengakses webcam. ";
+
+          if (
+            err.name === "NotAllowedError" ||
+            err.name === "PermissionDeniedError"
+          ) {
+            errorMessage +=
+              "Mohon berikan izin akses webcam di pengaturan browser Anda.";
+          } else if (
+            err.name === "NotFoundError" ||
+            err.name === "DevicesNotFoundError"
+          ) {
+            errorMessage +=
+              "Tidak ada webcam yang terdeteksi. Pastikan webcam Anda terhubung dengan benar.";
+          } else if (
+            err.name === "NotReadableError" ||
+            err.name === "TrackStartError"
+          ) {
+            errorMessage +=
+              "Webcam sedang digunakan oleh aplikasi lain. Silakan tutup aplikasi lain yang mungkin menggunakan webcam.";
+          } else {
+            errorMessage += "Silakan refresh halaman dan coba lagi.";
+          }
+
+          alert(errorMessage);
+          stream = null;
+        }
+      }
+
       captureBtn.addEventListener("click", async function () {
-        // Draw video frame to canvas
+        const refInput = document.getElementById("referenceImageWebcam");
+        if (!refInput.files[0]) {
+          alert("Please upload a reference image first.");
+          return;
+        }
+        if (!stream) {
+          alert("Webcam not started. Please allow access.");
+          await startWebcam();
+          if (!stream) return;
+        }
+        document.getElementById("loadingWebcam").classList.remove("hidden");
+        document.getElementById("resultWebcam").innerHTML = "";
+        document.getElementById("verdictWebcam").textContent = "";
         canvas
           .getContext("2d")
           .drawImage(video, 0, 0, canvas.width, canvas.height);
         canvas.toBlob(async function (blob) {
-          const refInput = document.querySelector(
-            '#webcamTab input[type="file"]'
-          );
-          if (!refInput.files[0]) {
-            alert("Please upload a reference image first.");
-            return;
-          }
-          // Show loading spinner
-          let webcamResult = document.getElementById("webcamResult");
-          webcamResult.innerText = "";
-          if (!document.getElementById("webcamLoading")) {
-            const spinner = document.createElement("div");
-            spinner.id = "webcamLoading";
-            spinner.className = "flex justify-center mt-4";
-            spinner.innerHTML = `<svg class="animate-spin h-8 w-8 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-            </svg>`;
-            webcamResult.before(spinner);
-          }
           const formData = new FormData();
           formData.append("reference", refInput.files[0]);
-          formData.append("webcam", blob, "webcam.jpg");
-          const response = await fetch("/predict_webcam", {
-            method: "POST",
-            body: formData
-          });
-          const data = await response.json();
-          // Remove loading spinner
-          const spinner = document.getElementById("webcamLoading");
-          if (spinner) spinner.remove();
-          webcamResult.innerText = JSON.stringify(data, null, 2);
-          // Show verdict
-          let webcamVerdict = document.getElementById("webcamVerdict");
-          if (!webcamVerdict) {
-            webcamVerdict = document.createElement("div");
-            webcamVerdict.id = "webcamVerdict";
-            webcamVerdict.className = "mt-2 text-lg font-semibold text-center";
-            webcamResult.after(webcamVerdict);
-          }
-          if (data.verified === true) {
-            webcamVerdict.textContent =
-              "✅ Webcam and reference are the same person.";
-            webcamVerdict.classList.remove("text-red-600");
-            webcamVerdict.classList.add("text-green-600");
-          } else if (data.verified === false) {
-            webcamVerdict.textContent =
-              "❌ Webcam and reference are NOT the same person.";
-            webcamVerdict.classList.remove("text-green-600");
-            webcamVerdict.classList.add("text-red-600");
-          } else {
-            webcamVerdict.textContent = "";
+          formData.append("webcam", blob, "webcam_capture.jpg");
+          formData.append(
+            "model_name",
+            document.getElementById("modelSelectWebcam").value
+          );
+          try {
+            const response = await fetch("/predict_webcam", {
+              method: "POST",
+              body: formData,
+            });
+            const data = await response.json();
+            displayResults(data, "resultWebcam", "verdictWebcam");
+          } catch (error) {
+            console.error("Error during webcam prediction:", error);
+            document.getElementById(
+              "resultWebcam"
+            ).innerHTML = `<p class="text-red-500 text-center font-semibold">An unexpected error occurred. Check console.</p>`;
+          } finally {
+            document.getElementById("loadingWebcam").classList.add("hidden");
           }
         }, "image/jpeg");
       });
 
-      // Webcam reference image preview
-      document
-        .querySelector('#webcamTab input[type="file"]')
-        .addEventListener("change", function () {
-          let preview = document.getElementById("webcamRefPreview");
-          if (!preview) {
-            preview = document.createElement("img");
-            preview.id = "webcamRefPreview";
-            preview.className = "mt-2 rounded shadow max-h-40 mx-auto";
-            this.after(preview);
-          }
-          const file = this.files[0];
-          if (file) {
-            const reader = new FileReader();
-            reader.onload = function (e) {
-              preview.src = e.target.result;
-              preview.classList.remove("hidden");
-            };
-            reader.readAsDataURL(file);
-          } else {
-            preview.src = "";
-            preview.classList.add("hidden");
-          }
-        });
+      window.addEventListener("beforeunload", () => {
+        if (stream) {
+          stream.getTracks().forEach((track) => track.stop());
+        }
+      });
     </script>
   </body>
 </html>
