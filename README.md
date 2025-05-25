@@ -3,7 +3,7 @@
 Anggota Kelompok:
 
 - Dimas Andhika Diputra 5027231074
-- Danendra Fidel Khansa 50272310xx
+- Danendra Fidel Khansa 5027231063
 
 ## Project Structure
 
