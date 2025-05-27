@@ -151,7 +151,8 @@
         <h1
           class="text-4xl md:text-5xl font-black text-center my-8 md:my-12 text-gray-100 uppercase tracking-wide"
         >
-          Facial <span class="text-red-500">Similarity</span> Analyzer
+          Facial <span class="text-red-500">Recognition</span> & Attribute
+          Analyzer
         </h1>
         <div
           class="w-full max-w-3xl mx-auto bg-neutral-900 rounded-xl shadow-2xl shadow-red-900/20 p-6 md:p-8"
@@ -163,14 +164,13 @@
                 class="py-3 px-4 text-red-500 border-b-2 border-red-500 font-semibold focus:outline-none text-sm md:text-base"
                 onclick="showTab('uploadTab')"
               >
-                Upload Images
-              </button>
-              <button
+                Upload & Analyze</button
+              ><button
                 id="tab-webcam"
                 class="py-3 px-4 text-gray-400 hover:text-red-400 border-b-2 border-transparent font-semibold focus:outline-none transition-colors duration-150 text-sm md:text-base"
                 onclick="showTab('webcamTab')"
               >
-                Webcam Recognition
+                Webcam Analysis
               </button>
             </nav>
           </div>
@@ -178,7 +178,7 @@
           <!-- Tab 1: Upload Images -->
           <div id="uploadTab" class="tab-content">
             <h2 class="text-2xl font-semibold mb-6 text-gray-100">
-              Compare Two Images
+              Compare Two Images & Analyze Attributes
             </h2>
             <form id="imageUploadForm" enctype="multipart/form-data">
               <div class="mb-6">
@@ -243,7 +243,7 @@
                 type="submit"
                 class="bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-lg w-full font-semibold text-lg transition-colors duration-150"
               >
-                Predict Similarity
+                Analyze Faces & Attributes
               </button>
             </form>
             <div id="loadingUpload" class="flex justify-center mt-6 hidden">
@@ -278,7 +278,7 @@
           <!-- Tab 2: Webcam Recognition -->
           <div id="webcamTab" class="tab-content hidden">
             <h2 class="text-2xl font-semibold mb-6 text-gray-100">
-              Live Webcam Comparison
+              Live Webcam Recognition & Attribute Analysis
             </h2>
             <form id="webcamForm" enctype="multipart/form-data">
               <div class="mb-6">
@@ -340,7 +340,7 @@
                   id="captureBtn"
                   class="bg-red-700 hover:bg-red-800 text-white py-3 px-6 rounded-lg font-semibold mt-2 text-lg transition-colors duration-150"
                 >
-                  Capture & Predict
+                  Capture & Analyze
                 </button>
               </div>
             </form>
@@ -424,7 +424,6 @@
         .addEventListener("change", function () {
           previewImage(this, "webcamRefPreview");
         });
-
       function displayResults(data, resultElementId, verdictElementId) {
         const resultElement = document.getElementById(resultElementId);
         const verdictElement = document.getElementById(verdictElementId);
@@ -442,11 +441,18 @@
           threshold,
           model,
           similarity_metric,
-          similarity_percentage
+          similarity_percentage,
+          image1_attributes,
+          image2_attributes
         } = data;
 
-        // Added text-gray-400 for labels, text-gray-100 for values
-        let html = '<div class="bg-neutral-800 p-4 rounded-lg shadow-md">';
+        // Main comparison results
+        let html = '<div class="space-y-6">';
+
+        // Face Comparison Section
+        html += '<div class="bg-neutral-800 p-4 rounded-lg shadow-md">';
+        html +=
+          '<h3 class="text-lg font-semibold text-gray-100 mb-3 border-b border-neutral-700 pb-2">Face Comparison Results</h3>';
         html += `<div class="result-item"><span class="result-label text-gray-400">Model Used:</span> <span class="result-value text-gray-100">${model}</span></div>`;
         html += `<div class="result-item"><span class="result-label text-gray-400">Distance:</span> <span class="result-value text-gray-100">${parseFloat(
           distance
@@ -457,17 +463,59 @@
         html += `<div class="result-item"><span class="result-label text-gray-400">Similarity Metric:</span> <span class="result-value text-gray-100">${similarity_metric}</span></div>`;
 
         html += `<div class="mt-4 mb-1"><span class="result-label text-gray-400">Similarity Score:</span></div>`;
-        html += `<div class="similarity-bar-container">`; // bg already dark from CSS
+        html += `<div class="similarity-bar-container">`;
         html += `<div class="similarity-bar" style="width: ${similarity_percentage}%; background-color: ${
-          verified ? "#10B981" : "#EF4444" // green-500 or red-500 (Tailwind colors)
+          verified ? "#10B981" : "#EF4444"
         };">${similarity_percentage}%</div>`;
         html += `</div>`;
 
         html += `<div class="result-item mt-2"><span class="result-label text-gray-400">Verified:</span> <span class="result-value font-bold ${
-          verified ? "text-green-500" : "text-red-500" // Tailwind green/red
+          verified ? "text-green-500" : "text-red-500"
         }">${
           verified ? "Yes (Same Person)" : "No (Different Persons)"
         }</span></div>`;
+        html += "</div>";
+
+        // Facial Attributes Section
+        if (image1_attributes || image2_attributes) {
+          html += '<div class="bg-neutral-800 p-4 rounded-lg shadow-md">';
+          html +=
+            '<h3 class="text-lg font-semibold text-gray-100 mb-3 border-b border-neutral-700 pb-2">Facial Attribute Analysis</h3>';
+
+          html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+
+          // Image 1 Attributes
+          if (image1_attributes) {
+            html += '<div class="bg-neutral-700 p-3 rounded-lg">';
+            html +=
+              '<h4 class="text-md font-semibold text-red-400 mb-2">Image 1 Analysis</h4>';
+            html += `<div class="text-sm space-y-1">`;
+            html += `<div class="flex justify-between"><span class="text-gray-400">Age:</span> <span class="text-gray-100">${image1_attributes.age} years</span></div>`;
+            html += `<div class="flex justify-between"><span class="text-gray-400">Gender:</span> <span class="text-gray-100">${image1_attributes.gender}</span></div>`;
+            html += `<div class="flex justify-between"><span class="text-gray-400">Race:</span> <span class="text-gray-100">${image1_attributes.race}</span></div>`;
+            html += `<div class="flex justify-between"><span class="text-gray-400">Emotion:</span> <span class="text-gray-100">${image1_attributes.emotion}</span></div>`;
+            html += `</div>`;
+            html += "</div>";
+          }
+
+          // Image 2 Attributes
+          if (image2_attributes) {
+            html += '<div class="bg-neutral-700 p-3 rounded-lg">';
+            html +=
+              '<h4 class="text-md font-semibold text-red-400 mb-2">Image 2 Analysis</h4>';
+            html += `<div class="text-sm space-y-1">`;
+            html += `<div class="flex justify-between"><span class="text-gray-400">Age:</span> <span class="text-gray-100">${image2_attributes.age} years</span></div>`;
+            html += `<div class="flex justify-between"><span class="text-gray-400">Gender:</span> <span class="text-gray-100">${image2_attributes.gender}</span></div>`;
+            html += `<div class="flex justify-between"><span class="text-gray-400">Race:</span> <span class="text-gray-100">${image2_attributes.race}</span></div>`;
+            html += `<div class="flex justify-between"><span class="text-gray-400">Emotion:</span> <span class="text-gray-100">${image2_attributes.emotion}</span></div>`;
+            html += `</div>`;
+            html += "</div>";
+          }
+
+          html += "</div>";
+          html += "</div>";
+        }
+
         html += "</div>";
         resultElement.innerHTML = html;
 

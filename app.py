@@ -74,6 +74,48 @@ def calculate_similarity_percentage(distance, threshold):
     # Clamp percentage between 0 and 100
     return max(0, min(percentage, 100))
 
+def analyze_facial_attributes(img_path):
+    """
+    Analyze facial attributes including age, gender, race, and emotion.
+    Returns formatted results or None if analysis fails.
+    """
+    try:
+        print(f"Analyzing facial attributes for: {img_path}")
+        result = DeepFace.analyze(
+            img_path=img_path, 
+            actions=['age', 'gender', 'race', 'emotion'],
+            enforce_detection=False,
+            detector_backend='retinaface'
+        )
+          # DeepFace.analyze returns a list of results (one per face detected)
+        if isinstance(result, list) and len(result) > 0:
+            analysis = result[0]  # Take the first face found
+        else:
+            analysis = result
+        
+        # Convert numpy values to regular Python types for JSON serialization
+        def convert_scores(scores_dict):
+            if not scores_dict:
+                return {}
+            return {k: float(v) for k, v in scores_dict.items()}
+        
+        # Format the results
+        formatted_result = {
+            'age': int(analysis.get('age', 0)),
+            'gender': str(analysis.get('dominant_gender', 'Unknown')),
+            'race': str(analysis.get('dominant_race', 'Unknown')),
+            'emotion': str(analysis.get('dominant_emotion', 'Unknown')),
+            'emotion_scores': convert_scores(analysis.get('emotion', {})),
+            'race_scores': convert_scores(analysis.get('race', {})),
+            'gender_scores': convert_scores(analysis.get('gender', {}))
+        }
+        
+        return formatted_result
+        
+    except Exception as e:
+        print(f"Error analyzing facial attributes for {img_path}: {e}")
+        return None
+
 
 @app.route('/')
 def index():
@@ -83,6 +125,8 @@ def handle_prediction_request(img1_path_df, img2_path_df, model_name):
     """Handles the DeepFace.verify call and formats the response."""
     try:
         print(f"Using model: {model_name} for {img1_path_df} and {img2_path_df}")
+        
+        # Perform face verification
         result = DeepFace.verify(
             img1_path=img1_path_df,
             img2_path=img2_path_df,
@@ -96,15 +140,24 @@ def handle_prediction_request(img1_path_df, img2_path_df, model_name):
         verified = bool(result['verified'])
         
         similarity_percentage = calculate_similarity_percentage(distance, threshold)
+        
+        # Perform facial attribute analysis for both images
+        print("Performing facial attribute analysis...")
+        img1_attributes = analyze_facial_attributes(img1_path_df)
+        img2_attributes = analyze_facial_attributes(img2_path_df)
 
-        return jsonify({
+        response_data = {
             'verified': verified,
             'distance': distance,
             'threshold': threshold,
             'model': result['model'],
             'similarity_metric': result['similarity_metric'],
-            'similarity_percentage': round(similarity_percentage, 2) # Round to 2 decimal places
-        })
+            'similarity_percentage': round(similarity_percentage, 2),
+            'image1_attributes': img1_attributes,
+            'image2_attributes': img2_attributes
+        }
+        
+        return jsonify(response_data)
 
     except ValueError as ve: # Catch specific errors like face not found
         print(f"ValueError during DeepFace processing: {ve}")
