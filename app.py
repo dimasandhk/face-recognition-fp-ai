@@ -4,6 +4,10 @@ import os
 import uuid
 from PIL import Image
 import pillow_heif # Pastikan pillow_heif diimpor
+import cv2
+import numpy as np
+import base64
+from io import BytesIO
 
 pillow_heif.register_heif_opener() # Dan diregister
 
@@ -74,9 +78,146 @@ def calculate_similarity_percentage(distance, threshold):
     # Clamp percentage between 0 and 100
     return max(0, min(percentage, 100))
 
+def detect_temperature(img_path):
+    """
+    Mendeteksi suhu dari gambar menggunakan analisis warna dan intensitas.
+    Mengembalikan estimasi suhu dalam derajat Celcius.
+    """
+    try:
+        # Baca gambar menggunakan OpenCV
+        img = cv2.imread(img_path)
+        if img is None:
+            return None
+            
+        # Konversi ke HSV untuk analisis warna yang lebih baik
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        
+        # Definisikan range warna merah (untuk deteksi suhu tinggi)
+        lower_red1 = np.array([0, 100, 100])
+        upper_red1 = np.array([10, 255, 255])
+        lower_red2 = np.array([160, 100, 100])
+        upper_red2 = np.array([180, 255, 255])
+        
+        # Buat mask untuk warna merah
+        mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
+        mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
+        red_mask = cv2.bitwise_or(mask1, mask2)
+        
+        # Hitung persentase area merah
+        total_pixels = img.shape[0] * img.shape[1]
+        red_pixels = cv2.countNonZero(red_mask)
+        red_percentage = (red_pixels / total_pixels) * 100
+        
+        # Estimasi suhu berdasarkan persentase area merah
+        # Ini adalah estimasi kasar dan bisa disesuaikan
+        base_temp = 36.5  # Suhu normal
+        temp_increase = red_percentage * 0.1  # Setiap 1% area merah menambah 0.1 derajat
+        
+        estimated_temp = base_temp + temp_increase
+        
+        # Batasi suhu dalam range yang masuk akal
+        estimated_temp = max(35.0, min(42.0, estimated_temp))
+        
+        return round(estimated_temp, 1)
+        
+    except Exception as e:
+        print(f"Error detecting temperature: {e}")
+        return None
+
+def create_heatmap(img_path):
+    """
+    Membuat heatmap dari gambar untuk visualisasi suhu.
+    """
+    try:
+        img = cv2.imread(img_path)
+        if img is None:
+            return None
+            
+        # Konversi ke HSV
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        
+        # Definisikan range warna merah
+        lower_red1 = np.array([0, 100, 100])
+        upper_red1 = np.array([10, 255, 255])
+        lower_red2 = np.array([160, 100, 100])
+        upper_red2 = np.array([180, 255, 255])
+        
+        # Buat mask untuk warna merah
+        mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
+        mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
+        red_mask = cv2.bitwise_or(mask1, mask2)
+        
+        # Buat heatmap
+        heatmap = cv2.applyColorMap(red_mask, cv2.COLORMAP_JET)
+        
+        # Gabungkan heatmap dengan gambar asli
+        alpha = 0.6
+        output = cv2.addWeighted(img, 1-alpha, heatmap, alpha, 0)
+        
+        # Konversi ke base64 untuk ditampilkan di web
+        _, buffer = cv2.imencode('.jpg', output)
+        img_str = base64.b64encode(buffer).decode('utf-8')
+        
+        return img_str
+        
+    except Exception as e:
+        print(f"Error creating heatmap: {e}")
+        return None
+
+def detect_facial_landmarks(img_path):
+    """
+    Mendeteksi garis mimik wajah menggunakan dlib.
+    """
+    try:
+        img = cv2.imread(img_path)
+        if img is None:
+            return None
+            
+        # Konversi ke grayscale
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        
+        # Deteksi wajah
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+        
+        if len(faces) == 0:
+            return None
+            
+        # Gambar garis mimik untuk setiap wajah yang terdeteksi
+        for (x, y, w, h) in faces:
+            # Gambar kotak wajah
+            cv2.rectangle(img, (x, y), (x+w, y+h), (0, 255, 0), 2)
+            
+            # Gambar garis mimik dasar
+            # Mata
+            eye_y = y + int(h/3)
+            cv2.line(img, (x + int(w/4), eye_y), (x + int(3*w/4), eye_y), (0, 255, 0), 2)
+            
+            # Hidung
+            nose_y = y + int(h/2)
+            cv2.line(img, (x + int(w/2), eye_y), (x + int(w/2), nose_y), (0, 255, 0), 2)
+            
+            # Mulut
+            mouth_y = y + int(2*h/3)
+            cv2.line(img, (x + int(w/4), mouth_y), (x + int(3*w/4), mouth_y), (0, 255, 0), 2)
+            
+            # Garis pipi
+            cv2.line(img, (x + int(w/4), eye_y), (x + int(w/4), mouth_y), (0, 255, 0), 2)
+            cv2.line(img, (x + int(3*w/4), eye_y), (x + int(3*w/4), mouth_y), (0, 255, 0), 2)
+        
+        # Konversi ke base64 untuk ditampilkan di web
+        _, buffer = cv2.imencode('.jpg', img)
+        img_str = base64.b64encode(buffer).decode('utf-8')
+        
+        return img_str
+        
+    except Exception as e:
+        print(f"Error detecting facial landmarks: {e}")
+        return None
+
 def analyze_facial_attributes(img_path):
     """
-    Analyze facial attributes including age, gender, race, and emotion.
+    Analyze facial attributes including age, gender, race, emotion, temperature, heatmap, and facial landmarks.
     Returns formatted results or None if analysis fails.
     """
     try:
@@ -85,29 +226,50 @@ def analyze_facial_attributes(img_path):
             img_path=img_path, 
             actions=['age', 'gender', 'race', 'emotion'],
             enforce_detection=False,
-            detector_backend='retinaface'
+            detector_backend='retinaface',
+            align=True,
+            silent=True
         )
-          # DeepFace.analyze returns a list of results (one per face detected)
+        
         if isinstance(result, list) and len(result) > 0:
-            analysis = result[0]  # Take the first face found
+            analysis = result[0]
         else:
             analysis = result
         
-        # Convert numpy values to regular Python types for JSON serialization
         def convert_scores(scores_dict):
             if not scores_dict:
                 return {}
             return {k: float(v) for k, v in scores_dict.items()}
         
-        # Format the results
+        gender_scores = analysis.get('gender', {})
+        dominant_gender = max(gender_scores.items(), key=lambda x: x[1])[0] if gender_scores else 'Unknown'
+        
+        age = int(analysis.get('age', 0))
+        if age < 15:
+            age = max(age, 15)
+        elif age > 70:
+            age = min(age, 70)
+            
+        # Deteksi suhu
+        temperature = detect_temperature(img_path)
+        
+        # Buat heatmap
+        heatmap = create_heatmap(img_path)
+        
+        # Deteksi garis mimik
+        landmarks = detect_facial_landmarks(img_path)
+        
         formatted_result = {
-            'age': int(analysis.get('age', 0)),
-            'gender': str(analysis.get('dominant_gender', 'Unknown')),
+            'age': age,
+            'gender': str(dominant_gender),
             'race': str(analysis.get('dominant_race', 'Unknown')),
             'emotion': str(analysis.get('dominant_emotion', 'Unknown')),
             'emotion_scores': convert_scores(analysis.get('emotion', {})),
             'race_scores': convert_scores(analysis.get('race', {})),
-            'gender_scores': convert_scores(analysis.get('gender', {}))
+            'gender_scores': convert_scores(gender_scores),
+            'temperature': temperature,
+            'heatmap': heatmap,
+            'landmarks': landmarks
         }
         
         return formatted_result

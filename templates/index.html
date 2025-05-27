@@ -443,7 +443,7 @@
           similarity_metric,
           similarity_percentage,
           image1_attributes,
-          image2_attributes
+          image2_attributes,
         } = data;
 
         // Main comparison results
@@ -494,7 +494,35 @@
             html += `<div class="flex justify-between"><span class="text-gray-400">Gender:</span> <span class="text-gray-100">${image1_attributes.gender}</span></div>`;
             html += `<div class="flex justify-between"><span class="text-gray-400">Race:</span> <span class="text-gray-100">${image1_attributes.race}</span></div>`;
             html += `<div class="flex justify-between"><span class="text-gray-400">Emotion:</span> <span class="text-gray-100">${image1_attributes.emotion}</span></div>`;
+            if (image1_attributes.temperature) {
+              const tempClass =
+                image1_attributes.temperature > 37.5
+                  ? "text-red-500"
+                  : "text-green-500";
+              html += `<div class="flex justify-between"><span class="text-gray-400">Temperature:</span> <span class="text-gray-100 ${tempClass}">${image1_attributes.temperature}°C</span></div>`;
+            }
             html += `</div>`;
+
+            // Tambahkan tampilan heatmap dan landmarks
+            if (image1_attributes.heatmap || image1_attributes.landmarks) {
+              html +=
+                '<div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">';
+              if (image1_attributes.heatmap) {
+                html += '<div class="bg-neutral-800 p-2 rounded-lg">';
+                html +=
+                  '<h5 class="text-sm font-semibold text-red-400 mb-2">Heatmap</h5>';
+                html += `<img src="data:image/jpeg;base64,${image1_attributes.heatmap}" class="w-full rounded-lg" alt="Heatmap">`;
+                html += "</div>";
+              }
+              if (image1_attributes.landmarks) {
+                html += '<div class="bg-neutral-800 p-2 rounded-lg">';
+                html +=
+                  '<h5 class="text-sm font-semibold text-red-400 mb-2">Facial Landmarks</h5>';
+                html += `<img src="data:image/jpeg;base64,${image1_attributes.landmarks}" class="w-full rounded-lg" alt="Facial Landmarks">`;
+                html += "</div>";
+              }
+              html += "</div>";
+            }
             html += "</div>";
           }
 
@@ -508,7 +536,35 @@
             html += `<div class="flex justify-between"><span class="text-gray-400">Gender:</span> <span class="text-gray-100">${image2_attributes.gender}</span></div>`;
             html += `<div class="flex justify-between"><span class="text-gray-400">Race:</span> <span class="text-gray-100">${image2_attributes.race}</span></div>`;
             html += `<div class="flex justify-between"><span class="text-gray-400">Emotion:</span> <span class="text-gray-100">${image2_attributes.emotion}</span></div>`;
+            if (image2_attributes.temperature) {
+              const tempClass =
+                image2_attributes.temperature > 37.5
+                  ? "text-red-500"
+                  : "text-green-500";
+              html += `<div class="flex justify-between"><span class="text-gray-400">Temperature:</span> <span class="text-gray-100 ${tempClass}">${image2_attributes.temperature}°C</span></div>`;
+            }
             html += `</div>`;
+
+            // Tambahkan tampilan heatmap dan landmarks
+            if (image2_attributes.heatmap || image2_attributes.landmarks) {
+              html +=
+                '<div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">';
+              if (image2_attributes.heatmap) {
+                html += '<div class="bg-neutral-800 p-2 rounded-lg">';
+                html +=
+                  '<h5 class="text-sm font-semibold text-red-400 mb-2">Heatmap</h5>';
+                html += `<img src="data:image/jpeg;base64,${image2_attributes.heatmap}" class="w-full rounded-lg" alt="Heatmap">`;
+                html += "</div>";
+              }
+              if (image2_attributes.landmarks) {
+                html += '<div class="bg-neutral-800 p-2 rounded-lg">';
+                html +=
+                  '<h5 class="text-sm font-semibold text-red-400 mb-2">Facial Landmarks</h5>';
+                html += `<img src="data:image/jpeg;base64,${image2_attributes.landmarks}" class="w-full rounded-lg" alt="Facial Landmarks">`;
+                html += "</div>";
+              }
+              html += "</div>";
+            }
             html += "</div>";
           }
 
@@ -541,7 +597,7 @@
           try {
             const response = await fetch("/predict", {
               method: "POST",
-              body: formData
+              body: formData,
             });
             const data = await response.json();
             displayResults(data, "resultUpload", "verdictUpload");
@@ -567,8 +623,8 @@
             video: {
               width: { ideal: 320 },
               height: { ideal: 240 },
-              facingMode: "user"
-            }
+              facingMode: "user",
+            },
           };
           stream = await navigator.mediaDevices.getUserMedia(constraints);
           video.srcObject = stream;
@@ -637,7 +693,7 @@
           try {
             const response = await fetch("/predict_webcam", {
               method: "POST",
-              body: formData
+              body: formData,
             });
             const data = await response.json();
             displayResults(data, "resultWebcam", "verdictWebcam");
