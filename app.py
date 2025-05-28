@@ -15,8 +15,15 @@ app = Flask(__name__)
 UPLOAD_FOLDER = 'temp_uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-SUPPORTED_MODELS = ["VGG-Face", "Facenet", "Facenet512", "OpenFace", "DeepFace", "DeepID", "ArcFace", "SFace", "GhostFaceNet"]
+SUPPORTED_MODELS = ["VGG-Face", "Facenet", "Facenet512", "ArcFace", "SFace", "GhostFaceNet"]
 DEFAULT_MODEL = "VGG-Face"
+
+# Tambahkan konstanta untuk distance metrics dan face detectors
+SUPPORTED_DISTANCE_METRICS = ["cosine", "euclidean", "euclidean_l2"]
+DEFAULT_DISTANCE_METRIC = "cosine"
+
+SUPPORTED_DETECTORS = ["retinaface", "mtcnn", "opencv"]
+DEFAULT_DETECTOR = "retinaface"
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
@@ -283,18 +290,19 @@ def analyze_facial_attributes(img_path):
 def index():
     return render_template('index.html')
 
-def handle_prediction_request(img1_path_df, img2_path_df, model_name):
+def handle_prediction_request(img1_path_df, img2_path_df, model_name, distance_metric=DEFAULT_DISTANCE_METRIC, detector=DEFAULT_DETECTOR):
     """Handles the DeepFace.verify call and formats the response."""
     try:
-        print(f"Using model: {model_name} for {img1_path_df} and {img2_path_df}")
+        print(f"Using model: {model_name} with distance metric: {distance_metric} and detector: {detector}")
         
         # Perform face verification
         result = DeepFace.verify(
             img1_path=img1_path_df,
             img2_path=img2_path_df,
             model_name=model_name,
+            distance_metric=distance_metric,
             enforce_detection=False,
-            detector_backend='retinaface' 
+            detector_backend=detector
         )
         
         distance = float(result['distance'])
@@ -313,6 +321,8 @@ def handle_prediction_request(img1_path_df, img2_path_df, model_name):
             'distance': distance,
             'threshold': threshold,
             'model': result['model'],
+            'distance_metric': distance_metric,
+            'detector': detector,
             'similarity_metric': result['similarity_metric'],
             'similarity_percentage': round(similarity_percentage, 2),
             'image1_attributes': img1_attributes,
@@ -338,9 +348,15 @@ def predict():
     file1 = request.files['image1']
     file2 = request.files['image2']
     model_name = request.form.get('model_name', DEFAULT_MODEL)
+    distance_metric = request.form.get('distance_metric', DEFAULT_DISTANCE_METRIC)
+    detector = request.form.get('detector', DEFAULT_DETECTOR)
 
     if model_name not in SUPPORTED_MODELS:
         return jsonify({'error': f'Invalid model selected.'}), 400
+    if distance_metric not in SUPPORTED_DISTANCE_METRICS:
+        return jsonify({'error': f'Invalid distance metric selected.'}), 400
+    if detector not in SUPPORTED_DETECTORS:
+        return jsonify({'error': f'Invalid detector selected.'}), 400
 
     if file1.filename == '' or file2.filename == '':
         return jsonify({'error': 'File name cannot be empty'}), 400
@@ -363,7 +379,7 @@ def predict():
             if os.path.exists(f_path): os.remove(f_path)
         return jsonify({'error': " ".join(error_msg)}), 500
 
-    response = handle_prediction_request(img1_path_df, img2_path_df, model_name)
+    response = handle_prediction_request(img1_path_df, img2_path_df, model_name, distance_metric, detector)
     
     # Ensure files are deleted even if handle_prediction_request itself returns an error response
     for f_path in files_to_delete:
@@ -383,9 +399,15 @@ def predict_webcam():
     ref_file = request.files['reference']
     webcam_file = request.files['webcam'] 
     model_name = request.form.get('model_name', DEFAULT_MODEL)
+    distance_metric = request.form.get('distance_metric', DEFAULT_DISTANCE_METRIC)
+    detector = request.form.get('detector', DEFAULT_DETECTOR)
 
     if model_name not in SUPPORTED_MODELS:
         return jsonify({'error': f'Invalid model selected.'}), 400
+    if distance_metric not in SUPPORTED_DISTANCE_METRICS:
+        return jsonify({'error': f'Invalid distance metric selected.'}), 400
+    if detector not in SUPPORTED_DETECTORS:
+        return jsonify({'error': f'Invalid detector selected.'}), 400
 
     if ref_file.filename == '':
         return jsonify({'error': 'Reference file name cannot be empty'}), 400
@@ -404,7 +426,7 @@ def predict_webcam():
             if os.path.exists(f_path): os.remove(f_path)
         return jsonify({'error': 'Failed to convert reference image (HEIC/HEIF).'}), 500
 
-    response = handle_prediction_request(ref_path_df, webcam_path, model_name)
+    response = handle_prediction_request(ref_path_df, webcam_path, model_name, distance_metric, detector)
 
     for f_path in files_to_delete:
         if os.path.exists(f_path):

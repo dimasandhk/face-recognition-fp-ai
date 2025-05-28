@@ -197,10 +197,39 @@
                   <option value="ArcFace">ArcFace</option>
                   <option value="SFace">SFace</option>
                   <option value="Facenet">Facenet</option>
-                  <option value="OpenFace">OpenFace</option>
-                  <option value="DeepFace">DeepFace</option>
-                  <option value="DeepID">DeepID</option>
                   <option value="GhostFaceNet">GhostFaceNet</option>
+                </select>
+              </div>
+              <div class="mb-6">
+                <label
+                  for="distanceMetricUpload"
+                  class="block text-gray-400 mb-2 font-semibold"
+                  >Select Distance Metric:</label
+                >
+                <select
+                  id="distanceMetricUpload"
+                  name="distance_metric"
+                  class="block w-full border border-neutral-700 bg-neutral-800 text-gray-200 rounded-lg shadow-sm p-3 focus:border-red-500 focus:ring-red-500 focus:ring-opacity-50 transition-colors"
+                >
+                  <option value="cosine" selected>Cosine</option>
+                  <option value="euclidean">Euclidean</option>
+                  <option value="euclidean_l2">Euclidean L2</option>
+                </select>
+              </div>
+              <div class="mb-6">
+                <label
+                  for="detectorUpload"
+                  class="block text-gray-400 mb-2 font-semibold"
+                  >Select Face Detector (Crop):</label
+                >
+                <select
+                  id="detectorUpload"
+                  name="detector"
+                  class="block w-full border border-neutral-700 bg-neutral-800 text-gray-200 rounded-lg shadow-sm p-3 focus:border-red-500 focus:ring-red-500 focus:ring-opacity-50 transition-colors"
+                >
+                  <option value="retinaface" selected>RetinaFace</option>
+                  <option value="mtcnn">MTCNN</option>
+                  <option value="opencv">OpenCV</option>
                 </select>
               </div>
               <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -297,10 +326,39 @@
                   <option value="ArcFace">ArcFace</option>
                   <option value="SFace">SFace</option>
                   <option value="Facenet">Facenet</option>
-                  <option value="OpenFace">OpenFace</option>
-                  <option value="DeepFace">DeepFace</option>
-                  <option value="DeepID">DeepID</option>
                   <option value="GhostFaceNet">GhostFaceNet</option>
+                </select>
+              </div>
+              <div class="mb-6">
+                <label
+                  for="distanceMetricWebcam"
+                  class="block text-gray-400 mb-2 font-semibold"
+                  >Select Distance Metric:</label
+                >
+                <select
+                  id="distanceMetricWebcam"
+                  name="distance_metric"
+                  class="block w-full border border-neutral-700 bg-neutral-800 text-gray-200 rounded-lg shadow-sm p-3 focus:border-red-500 focus:ring-red-500 focus:ring-opacity-50 transition-colors"
+                >
+                  <option value="cosine" selected>Cosine</option>
+                  <option value="euclidean">Euclidean</option>
+                  <option value="euclidean_l2">Euclidean L2</option>
+                </select>
+              </div>
+              <div class="mb-6">
+                <label
+                  for="detectorWebcam"
+                  class="block text-gray-400 mb-2 font-semibold"
+                  >Select Face Detector (Crop):</label
+                >
+                <select
+                  id="detectorWebcam"
+                  name="detector"
+                  class="block w-full border border-neutral-700 bg-neutral-800 text-gray-200 rounded-lg shadow-sm p-3 focus:border-red-500 focus:ring-red-500 focus:ring-opacity-50 transition-colors"
+                >
+                  <option value="retinaface" selected>RetinaFace</option>
+                  <option value="mtcnn">MTCNN</option>
+                  <option value="opencv">OpenCV</option>
                 </select>
               </div>
               <div class="mb-6">
